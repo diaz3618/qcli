@@ -14,7 +14,9 @@ qcli is a useful cli tool for managing torrents on a remote qBittorrent server v
 
 - Add magnet links or .torrent files to your qBittorrent server
 - Batch add magnets from a file
-- Export and import magnet links for backup or migration
+- List all torrents in a color-coded **(torrent state)** table, with filtering by state
+- Export all magnet links for backup or migration
+- Import all .torrent files from a directory
 - Move torrents to new save paths or categories
 - View server status (health, free space, active downloads)
 - Show detailed info for a specific torrent
@@ -50,22 +52,16 @@ Run the CLI tool with your desired options:
 
 - `--magnet` Magnet link to add
 - `--torrent` Path to .torrent file to add
-- `--magnet-file` Path to file with magnet links (one per line)
+- `--magnet-file` Path to file with magnet links **(one per line)**
+- `--list-torrents [FILTER]` List all torrents filter by state: **All, Active, Downloading, Seeding, Completed, Stopped, Stalled, Errored.**
 - `--path` Download save path on server
 - `--host` qBittorrent WebUI host URL (default: http://172.16.0.20:8080).
-- `--user` qBittorrent WebUI username (default: admin)
-- `--pass` qBittorrent WebUI password (default: adminadmin)
+- `--user` qBittorrent WebUI username **(default: admin)**
+- `--pass` qBittorrent WebUI password **(default: adminadmin)**
 - `--status` Show server health, free space, and active downloads
 - `--move` Move torrents to new save path or category
 - `--details` Show full info for a specific torrent
-- `--export` Export all magnet links to a single file named with the current date and time, e.g. `20251104-1304_magnets.txt`, in the specified directory. .torrent export is not supported.
-## Exporting magnet links
-
-When using `--export`, qcli will export all magnet links for your torrents to a single file named with the current date and time, e.g. `20251104-1304_magnets.txt`, in the specified directory. Each magnet link will be written on its own line. Exporting `.torrent` files is not supported.
-
-## Logging and Error Handling
-
-qcli uses Python's logging module for all output and error handling. Errors in submodules raise exceptions and are handled in the main CLI. All status, move, and details operations log their output.
+- `--export` Export all magnet links to a single file named with the current date and time **`(20251104-1304_magnets.txt)`**, in the specified directory.
 - `--import-dir` Import all .torrent files from directory
 - `--compare` Compare torrents between two servers
 
