@@ -1,4 +1,3 @@
-
 # qcli
 
 ![Python](https://img.shields.io/badge/python-3.13%2B-blue)
@@ -21,6 +20,7 @@ qcli is a useful cli tool for managing torrents on a remote qBittorrent server v
 - View server status (health, free space, active downloads)
 - Show detailed info for a specific torrent
 - Compare torrents between two servers
+- Manage qBittorrent WebUI settings, organized by category, with options to list categories, view settings per category, and change any setting from the CLI
 
 ## Installation
 
@@ -64,6 +64,7 @@ Run the CLI tool with your desired options:
 - `--export` Export all magnet links to a single file named with the current date and time **`(20251104-1304_magnets.txt)`**, in the specified directory.
 - `--import-dir` Import all .torrent files from directory
 - `--compare` Compare torrents between two servers
+- `--settings` Manage qBittorrent WebUI settings
 
 ## Example
 
@@ -81,6 +82,32 @@ Show server status:
 ```bash
 ./qcli.py --status
 ```
+
+## WebUI Settings Management
+
+You can view and change all qBittorrent WebUI settings, organized by category:
+
+### List all categories
+```bash
+./qcli.py --settings categories
+```
+
+### List all settings in a category
+```bash
+./qcli.py --settings list <category>
+```
+
+### List all settings, grouped by category
+```bash
+./qcli.py --settings list
+```
+
+### Change a setting
+```bash
+./qcli.py --settings set <key> <value>
+```
+
+Values for booleans (`true`/`false`), numbers, and `null` are automatically converted to the correct type. All changes are sent in the correct format for the qBittorrent WebUI API.
 
 ## Contributing
 
