@@ -9,7 +9,7 @@ def compare_torrents_cli(session, host, user, password, src_host, src_user, src_
         args_obj.user = user
         args_obj.password = password
         try:
-            s = get_authenticated_session(args_obj)
+            s = get_authenticated_session(host, user, password)
             resp = s.get(f"{host}/api/v2/torrents/info")
             resp.raise_for_status()
             return set(t['hash'] for t in resp.json())

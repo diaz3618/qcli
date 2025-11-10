@@ -12,6 +12,8 @@ from src.details_cli import show_details_cli
 from src.export_cli import export_torrents_cli
 from src.importer_cli import import_torrents_cli
 from src.compare_cli import compare_torrents_cli
+from src.category_cli import manage_categories_cli
+from src.tag_cli import manage_tags_cli
 from src.torrent import torrent_list
 from src.listing import print_torrent_table
 
@@ -31,8 +33,10 @@ def main():
     group.add_argument("--export", metavar="DIR", help="Export all torrents to directory")
     group.add_argument("--import-dir", metavar="DIR", help="Import all .torrent files from directory")
     group.add_argument("--compare", nargs=3, metavar=("HOST1", "USER1", "PASS1"), help="Compare torrents between two servers")
-    group.add_argument("--list-torrents", nargs="?", metavar="FILTER", default=None, help="List torrents (optionally filter: All, Active, Downloading, Seeding, Completed, Stopped, Stalled, Errored)")
+    group.add_argument("--list-torrents", nargs="?", metavar="FILTER", const="All", default=None, help="List torrents (optionally filter: All, Active, Downloading, Seeding, Completed, Stopped, Stalled, Errored)")
     group.add_argument("--settings", nargs="*", metavar="ARGS", help="View or change WebUI settings. Usage: --settings list OR --settings set <key> <value>")
+    group.add_argument("--manage-categories", nargs="*", metavar="ARGS", help="Manage categories. Usage: --manage-categories list | add <name> [save-path] | delete <name> | edit <name> <save-path>")
+    group.add_argument("--manage-tags", nargs="*", metavar="ARGS", help="Manage tags. Usage: --manage-tags list | add <tag> <hashes> | remove <tag> <hashes> | delete <tag>")
     parser.add_argument("--path", required=False, help="Download save path on server")
     parser.add_argument("--host", default=DEFAULT_HOST, help="qBittorrent WebUI host URL")
     parser.add_argument("--user", default=DEFAULT_USER, help="qBittorrent WebUI username")
@@ -41,18 +45,7 @@ def main():
     parser.add_argument("--tag", help="Tag for export")
     parser.add_argument("--state", help="State filter for export")
 
-    import contextlib
-    import io
-    sys_argv = sys.argv[1:]
-    if not sys_argv:
-        parser.print_help()
-        sys.exit(0)
-    with contextlib.redirect_stderr(io.StringIO()):
-        try:
-            args = parser.parse_args()
-        except SystemExit as e:
-            parser.print_help()
-            sys.exit(0)
+    args = parser.parse_args()
 
     try:
         session = get_authenticated_session(args.host, args.user, args.password)
@@ -61,13 +54,10 @@ def main():
         sys.exit(1)
 
     if args.settings is not None:
-        DEFAULT_HOST = "http://172.16.0.20:8080"
-        DEFAULT_USER = "admin"
-        DEFAULT_PASS = "adminadmin"
-        host = args.host if args.host else DEFAULT_HOST
-        user = args.user if args.user else DEFAULT_USER
-        password = args.password if args.password else DEFAULT_PASS
-    # Categories and their keys
+        host = args.host
+        user = args.user
+        password = args.password
+    
         categories = {
             "Behavior": [
                 "locale", "performance_warning", "status_bar_external_ip", "confirm_torrent_deletion", "file_log_enabled", "file_log_path", "file_log_backup_enabled", "file_log_max_size", "file_log_delete_old", "file_log_age", "file_log_age_type", "delete_torrent_content_files"
@@ -147,7 +137,7 @@ def main():
                 print("Usage: --settings set <key> <value>")
                 sys.exit(1)
             key, value = args.settings[1], args.settings[2]
-            # Convert value to correct type
+            
             v_lower = value.lower()
             if v_lower == "true":
                 value = True
@@ -156,7 +146,7 @@ def main():
             elif v_lower == "null":
                 value = None
             else:
-                # Try to convert to int or float
+                
                 try:
                     if "." in value:
                         value = float(value)
@@ -173,6 +163,93 @@ def main():
             print("Unknown settings action. Use 'list', 'set', or 'categories'.")
             sys.exit(1)
         sys.exit(0)
+
+    
+    elif args.magnet:
+        add_magnet_cli(session, args.host, args.magnet, args.path)
+    elif args.torrent:
+        add_torrent_cli(session, args.host, args.torrent, args.path)
+    elif args.magnet_file:
+        add_magnet_file_cli(session, args.host, args.magnet_file, args.path)
+    elif args.status:
+        print_status(session, args.host)
+    elif args.move:
+        move_torrents_cli(session, args.host, args.move[0], args.path, args.category)
+    elif args.details:
+        show_details_cli(session, args.host, args.details)
+    elif args.export:
+        export_torrents_cli(session, args.host, args.export, args.category, args.tag, args.state)
+    elif args.import_dir:
+        import_torrents_cli(session, args.host, args.import_dir, args.path)
+    elif args.compare:
+        compare_torrents_cli(session, args.host, args.user, args.password, args.compare[0], args.compare[1], args.compare[2])
+    elif args.list_torrents is not None:
+        from src.torrent import torrent_list
+        filter_mode = args.list_torrents if args.list_torrents else "All"
+        torrents = torrent_list(session, args.host, filter_mode)
+        print_torrent_table(torrents, filter_mode)
+    elif args.manage_categories is not None:
+        if not args.manage_categories:
+            print("Usage: --manage-categories list | add <name> [save-path] | delete <name> | edit <name> <save-path>")
+            sys.exit(1)
+        action = args.manage_categories[0]
+        if action == "list":
+            manage_categories_cli(session, args.host, "list")
+        elif action == "add":
+            if len(args.manage_categories) < 2:
+                print("Category name is required for add")
+                sys.exit(1)
+            name = args.manage_categories[1]
+            save_path = args.manage_categories[2] if len(args.manage_categories) > 2 else None
+            manage_categories_cli(session, args.host, "add", name, save_path)
+        elif action == "delete":
+            if len(args.manage_categories) < 2:
+                print("Category name is required for delete")
+                sys.exit(1)
+            name = args.manage_categories[1]
+            manage_categories_cli(session, args.host, "delete", name)
+        elif action == "edit":
+            if len(args.manage_categories) < 3:
+                print("Category name and save path are required for edit")
+                sys.exit(1)
+            name = args.manage_categories[1]
+            save_path = args.manage_categories[2]
+            manage_categories_cli(session, args.host, "edit", name, save_path)
+        else:
+            print("Invalid action. Use: list, add, delete, or edit")
+            sys.exit(1)
+    elif args.manage_tags is not None:
+        if not args.manage_tags:
+            print("Usage: --manage-tags list | add <tag> <hashes> | remove <tag> <hashes> | delete <tag>")
+            sys.exit(1)
+        action = args.manage_tags[0]
+        if action == "list":
+            manage_tags_cli(session, args.host, "list")
+        elif action == "add":
+            if len(args.manage_tags) < 3:
+                print("Tag name and torrent hashes are required for add")
+                sys.exit(1)
+            tag_name = args.manage_tags[1]
+            hashes = args.manage_tags[2]
+            manage_tags_cli(session, args.host, "add", tag_name, hashes)
+        elif action == "remove":
+            if len(args.manage_tags) < 3:
+                print("Tag name and torrent hashes are required for remove")
+                sys.exit(1)
+            tag_name = args.manage_tags[1]
+            hashes = args.manage_tags[2]
+            manage_tags_cli(session, args.host, "remove", tag_name, hashes)
+        elif action == "delete":
+            if len(args.manage_tags) < 2:
+                print("Tag name is required for delete")
+                sys.exit(1)
+            tag_name = args.manage_tags[1]
+            manage_tags_cli(session, args.host, "delete", tag_name)
+        else:
+            print("Invalid action. Use: list, add, remove, or delete")
+            sys.exit(1)
+    else:
+        parser.print_help()
 
 if __name__ == "__main__":
     main()

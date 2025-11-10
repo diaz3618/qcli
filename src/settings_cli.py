@@ -6,8 +6,8 @@ import argparse
 import requests
 import sys
 
-# Helper: login and return session
-from utils import get_authenticated_session
+
+from src.utils import get_authenticated_session
 
 def list_settings(host, session):
     resp = session.get(f"{host}/api/v2/app/preferences")
